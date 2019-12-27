@@ -6,11 +6,20 @@ class NegociacaoController {
         this._inputQuantidade = $('#quantidade');
         this._inputValor = $ ('#valor');
 
-        // essa instacia ira para para a classe listaNegociacao um metodo de atualização da lista.
-        this._listaNegociacoes = new ListaNegociacoes((model)=>{
-            this._negociacoesView.update(model);
-        });  
-
+       self = this;
+       this._listaNegociacoes = new Proxy(new ListaNegociacoes(),{
+        get(target,prop,receiver){
+            if(['adiciona','esvazia'].includes(prop) && typeof(target[prop]) == typeof(Function)){
+               return function(){
+                   console.log(`interceptado ${prop}`);
+                   Reflect.apply(target[prop], target, arguments);
+                   self._negociacoesView.update(target);
+               }
+            }
+            return Reflect.get(target,prop,receiver);
+        }
+    });
+        
         this._negociacoesView = new NegociacoesView($('#negociacaoView'));
         this._negociacoesView.update(this._listaNegociacoes); 
         
@@ -22,7 +31,7 @@ class NegociacaoController {
     adiciona(event) {
         event.preventDefault();
         this._listaNegociacoes.adiciona(this._criaNegociacao());
-        
+      
         this._mensagem.texto = 'Negociação adicionada com sucesso';
         this._mensagemView.update(this._mensagem);
      
